@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vertex Cover · ApproxVertexCover · Algoritm 2-Aproximativ</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:             #0b0e14;
+  --panou:          #10141c;
+  --panou2:         #141923;
+  --bordura:        #1e2633;
+  --bordura2:       #2a3546;
+  --text:           #c0cfe0;
+  --text-dim:       #5a6e87;
+  --text-hi:        #e8f0fc;
+  --albastru:       #4d8af0;
+  --albastru-dim:   #1a2e50;
+  --chihlimbar:     #f0a030;
+  --chihlimbar-dim: #3a2608;
+  --verde:          #3ecf72;
+  --verde-dim:      #0d2a1a;
+  --violet:         #c084fc;
+  --violet-dim:     #2a0a4a;
+  --rosu:           #f0604a;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+  --display: 'Syne', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--mono); overflow: hidden; }
+
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── ANTET ── */
+#antet {
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; height: 50px;
+  background: var(--panou); border-bottom: 1px solid var(--bordura); flex-shrink: 0;
+}
+#antet h1 { font-family: var(--display); font-size: 16px; font-weight: 800; letter-spacing: -0.01em; color: var(--text-hi); }
+#antet .eticheta { font-size: 10px; letter-spacing: 0.1em; color: var(--chihlimbar); text-transform: uppercase; padding: 3px 8px; border: 1px solid var(--chihlimbar-dim); border-radius: 3px; background: #1e1006; }
+#statistici-graf { margin-left: auto; font-size: 11px; color: var(--text-dim); letter-spacing: 0.06em; }
+
+/* ── PRINCIPAL ── */
+#principal { display: flex; flex: 1; overflow: hidden; }
+
+/* ── PANOU STÂNGA ── */
+#panou-stanga {
+  width: 340px; min-width: 280px; flex-shrink: 0;
+  background: var(--panou); border-right: 1px solid var(--bordura);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sectiune { display: flex; flex-direction: column; overflow: hidden; border-bottom: 1px solid var(--bordura); }
+.sectiune:last-child { flex: 1; border-bottom: none; }
+.sectiune.pseudocod-sec { flex: 1.7; }
+.sectiune.stare-sec     { flex: 1.3; }
+
+.titlu-sectiune {
+  flex-shrink: 0; padding: 7px 14px; font-size: 9.5px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--chihlimbar);
+  background: #120d04; border-bottom: 1px solid var(--bordura);
+}
+.titlu-sectiune.stare-title { color: var(--verde); background: #050f0a; }
+.corp-sectiune { flex: 1; overflow-y: auto; padding: 0; font-size: 12px; line-height: 1.8; }
+.corp-sectiune::-webkit-scrollbar { width: 4px; }
+.corp-sectiune::-webkit-scrollbar-track { background: transparent; }
+.corp-sectiune::-webkit-scrollbar-thumb { background: var(--bordura2); border-radius: 2px; }
+
+/* ── PSEUDOCOD ── */
+.linie-cod {
+  display: flex; align-items: baseline; gap: 0;
+  padding: 2px 0; font-size: 12px; line-height: 1.9;
+  border-left: 3px solid transparent;
+  transition: background 0.2s, border-color 0.2s;
+  padding-right: 12px;
+}
+.linie-cod.activa {
+  background: rgba(240,160,48,0.12);
+  border-left-color: var(--chihlimbar);
+}
+.linie-cod.activa-verde {
+  background: rgba(62,207,114,0.1);
+  border-left-color: var(--verde);
+}
+.nr-linie {
+  display: inline-block; width: 28px; min-width: 28px;
+  text-align: right; padding-right: 10px; color: var(--text-dim);
+  font-size: 10.5px; flex-shrink: 0;
+}
+.cod-continut { flex: 1; }
+
+/* Culori sintaxă pseudocod */
+.kw  { color: #e07b3c; font-weight: 700; }
+.fn  { color: #e8c070; font-weight: 700; }
+.vr  { color: #79b8ff; }
+.op  { color: var(--text-dim); }
+.cm  { color: var(--text-dim); font-style: italic; }
+.wt  { color: #f0b420; }
+.sol-in  { color: var(--verde); font-weight: 500; }
+.sol-out { color: var(--text-dim); }
+.sol-obj { color: var(--text-hi); font-weight: 700; }
+.sol-opt { color: var(--violet); font-weight: 500; }
+.hl-edge { color: var(--chihlimbar); font-weight: 700; }
+
+/* Stare execuție */
+#text-stare { padding: 12px 16px; font-size: 11.5px; line-height: 1.8; }
+pre.stare-pre { white-space: pre-wrap; word-break: break-word; }
+
+/* ── DREAPTA ── */
+#dreapta { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+/* ── BARĂ DE INSTRUMENTE ── */
+#bara-instrumente {
+  flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+  padding: 9px 16px; background: var(--panou); border-bottom: 1px solid var(--bordura);
+  flex-wrap: wrap;
+}
+.buton {
+  padding: 6px 13px; border: 1px solid var(--bordura2); background: transparent;
+  color: var(--text); font-family: var(--mono); font-size: 11px; border-radius: 4px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.buton:hover  { border-color: var(--albastru); color: var(--text-hi); background: var(--albastru-dim); }
+.buton:active { transform: scale(0.96); }
+.buton:disabled { opacity: 0.35; cursor: not-allowed; transform: none; border-color: var(--bordura); color: var(--text-dim); background: transparent; }
+.buton-init  { border-color: var(--chihlimbar); color: var(--chihlimbar); }
+.buton-init:hover:not(:disabled) { background: var(--chihlimbar); color: #000; }
+.buton-pas   { border-color: var(--verde); color: var(--verde); }
+.buton-pas:hover:not(:disabled) { background: var(--verde); color: #000; }
+.buton-run   { border-color: var(--albastru); color: var(--albastru); }
+.buton-run:hover:not(:disabled) { background: var(--albastru); color: #fff; }
+.buton-reset { border-color: var(--bordura2); color: var(--text-dim); }
+.buton-pericol { border-color: #3a1a14; color: #c04830; }
+.buton-pericol:hover:not(:disabled) { background: #2a1008; border-color: var(--rosu); color: var(--rosu); }
+.sep { width: 1px; height: 24px; background: var(--bordura2); flex-shrink: 0; }
+#insigna-shift {
+  margin-left: auto; padding: 5px 12px; border-radius: 4px; font-size: 10.5px;
+  letter-spacing: 0.1em; font-weight: 700; border: 1.5px solid var(--bordura2);
+  color: var(--text-dim); transition: all 0.15s; user-select: none;
+}
+#insigna-shift.activ { border-color: var(--chihlimbar); color: var(--chihlimbar); background: var(--chihlimbar-dim); box-shadow: 0 0 12px rgba(240,160,48,0.18); }
+
+/* ── CANVAS ── */
+#container-canvas { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+#canvas-graf { display: block; position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+
+/* ── BARĂ AJUTOR ── */
+#bara-ajutor { flex-shrink: 0; padding: 5px 16px; font-size: 10.5px; color: var(--text-dim); background: var(--panou); border-top: 1px solid var(--bordura); letter-spacing: 0.04em; }
+#bara-ajutor span { color: var(--albastru); }
+
+/* ── OVERLAY SELECȚIE ── */
+#indicator-selectie {
+  position: absolute; bottom: 14px; right: 14px; padding: 6px 12px;
+  background: var(--chihlimbar-dim); border: 1px solid var(--chihlimbar);
+  color: var(--chihlimbar); font-size: 11px; letter-spacing: 0.06em;
+  border-radius: 4px; display: none; pointer-events: none;
+}
+#indicator-selectie.vizibil { display: block; }
+
+/* ── LEGENDĂ ── */
+#legenda {
+  position: absolute; top: 12px; right: 12px; background: var(--panou2);
+  border: 1px solid var(--bordura); border-radius: 6px; padding: 10px 14px;
+  font-size: 10.5px; line-height: 2; color: var(--text-dim); pointer-events: none;
+}
+.punct-legenda { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; border: 1.5px solid; }
+.linie-legenda { display: inline-block; width: 18px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header id="antet">
+    <h1>Vertex Cover · ApproxVertexCover</h1>
+    <span class="eticheta">Algoritm 2-Aproximativ</span>
+    <span id="statistici-graf">0 noduri · 0 muchii</span>
+  </header>
+
+  <div id="principal">
+
+    <!-- STÂNGA: PSEUDOCOD + STARE -->
+    <aside id="panou-stanga">
+      <div class="sectiune pseudocod-sec">
+        <div class="titlu-sectiune">Pseudocod</div>
+        <div class="corp-sectiune" id="corp-pseudocod">
+          <!-- generat dinamic -->
+        </div>
+      </div>
+      <div class="sectiune stare-sec">
+        <div class="titlu-sectiune stare-title">Stare Execuție</div>
+        <div class="corp-sectiune">
+          <pre id="text-stare" class="stare-pre"><span class="cm">// Construiește un graf, apoi
+// apasă "Inițializează" pentru
+// a porni algoritmul pas cu pas.</span></pre>
+        </div>
+      </div>
+    </aside>
+
+    <!-- DREAPTA: CANVAS -->
+    <div id="dreapta">
+      <div id="bara-instrumente">
+        <button class="buton buton-init" id="btn-init">⬤  Inițializează</button>
+        <button class="buton buton-pas"  id="btn-pas"  disabled>▶  Pas următor</button>
+        <button class="buton buton-run"  id="btn-run"  disabled>⏩  Rulează tot</button>
+        <button class="buton buton-reset" id="btn-reset" disabled>↺  Reset algoritm</button>
+        <div class="sep"></div>
+        <button class="buton buton-pericol" id="btn-sterge">✕  Șterge graful</button>
+        <div id="insigna-shift">⇧ SHIFT: INACTIV</div>
+      </div>
+
+      <div id="container-canvas">
+        <canvas id="canvas-graf"></canvas>
+
+        <div id="legenda">
+          <div><span class="punct-legenda" style="background:#1a2a40;border-color:#4d8af0"></span>Nod</div>
+          <div><span class="punct-legenda" style="background:var(--verde-dim);border-color:var(--verde)"></span>În S (acoperire)</div>
+          <div><span class="linie-legenda" style="background:var(--chihlimbar)"></span>Muchia aleasă (E*)</div>
+          <div><span class="linie-legenda" style="background:#3a3a3a;border:1px dashed #555"></span>Eliminată din E'</div>
+          <div><span class="punct-legenda" style="background:var(--violet-dim);border-color:var(--violet)"></span>OPT</div>
+        </div>
+
+        <div id="indicator-selectie">⇧ 1 nod selectat — apasă pe alt nod</div>
+      </div>
+
+      <div id="bara-ajutor">
+        <span>Click</span> pe canvas → adaugă nod &nbsp;·&nbsp;
+        <span>Shift+Click</span> nod → conectează muchie &nbsp;·&nbsp;
+        <span>Shift+Click</span> muchie → șterge muchia &nbsp;·&nbsp;
+        <span>Trage</span> nod → mută poziția
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STARE GLOBALĂ A GRAFULUI
+// ============================================================
+const G = {
+  noduri:       [],   // { id, x, y }
+  muchii:       [],   // { u, v }  (indici 0-based)
+  sel:          [],   // noduri selectate pt creare muchie
+  muchie_hover: -1,
+  urmatorul_id: 1,
+};
+
+// ============================================================
+// STAREA ALGORITMULUI ApproxVertexCover
+// ============================================================
+const alg = {
+  initializat:  false,
+  terminat:     false,
+  E_prim:       [],       // indici de muchii rămase (neeliminate)
+  S:            new Set(), // noduri din acoperire (indici)
+  matching:     new Set(), // muchii alese în iterații (E*)
+  eliminate:    new Set(), // muchii eliminate (incidente, nu alese)
+  proaspeti:    new Set(), // noduri adăugate în pasul curent
+  muchia_pas:   -1,        // muchia aleasă în pasul curent
+  linii_active: new Set(), // linii pseudocod evidențiate
+  pas:          0,
+  jurnal:       [],
+  optim:        null,      // soluție optimă (brute force)
+};
+
+const RAZA_NOD = 22;
+
+// ============================================================
+// PSEUDOCODUL — structura statică
+// ============================================================
+const PSEUDOCOD = [
+  { id: 1, indent: 0, html: `<span class="fn">ApproxVertexCover</span><span class="op">(</span><span class="vr">G</span> <span class="op">=</span> <span class="op">(</span><span class="vr">V</span><span class="op">,</span> <span class="vr">E</span><span class="op">)) :</span>` },
+  { id: 2, indent: 1, html: `<span class="vr">E'</span>  <span class="op">←</span>  <span class="vr">E</span>` },
+  { id: 3, indent: 1, html: `<span class="vr">S</span>   <span class="op">←</span>  <span class="op">∅</span>` },
+  { id: 4, indent: 1, html: `<span class="kw">cât timp</span>  <span class="vr">E'</span> <span class="op">≠</span> <span class="op">∅</span> <span class="op">:</span>` },
+  { id: 5, indent: 2, html: `<span class="kw">alege</span>  <span class="op">(</span><span class="vr">x</span><span class="op">,</span> <span class="vr">y</span><span class="op">)</span>  <span class="op">∊</span>  <span class="vr">E'</span>` },
+  { id: 6, indent: 2, html: `<span class="vr">S</span>  <span class="op">←</span>  <span class="vr">S</span>  <span class="op">∪</span>  <span class="op">{</span><span class="vr">x</span><span class="op">,</span> <span class="vr">y</span><span class="op">}</span>` },
+  { id: 7, indent: 2, html: `<span class="kw">şterge</span>  <span class="op">din</span>  <span class="vr">E'</span>  <span class="kw">toate</span> muchiile` },
+  { id: 8, indent: 3, html: `incidente lui  <span class="vr">x</span>  şi lui  <span class="vr">y</span>` },
+  { id: 9, indent: 1, html: `<span class="kw">return</span>  <span class="vr">S</span>` },
+];
+
+// Culoarea de highlight per linie
+const CULORI_LINII = {
+  2: 'activa', 3: 'activa',       // initializare → chihlimbar
+  4: 'activa',                    // condiție buclă
+  5: 'activa',                    // alege muchia
+  6: 'activa-verde',              // adaugă la S
+  7: 'activa', 8: 'activa',      // șterge
+  9: 'activa-verde',              // return
+};
+
+function randeazaPseudocod() {
+  let h = '';
+  for (const linie of PSEUDOCOD) {
+    const cls = alg.linii_active.has(linie.id)
+      ? ` ${CULORI_LINII[linie.id] || 'activa'}`
+      : '';
+    h += `<div class="linie-cod${cls}">`;
+    h += `<span class="nr-linie">${linie.id}</span>`;
+    h += `<span class="cod-continut" style="padding-left:${linie.indent * 18}px">${linie.html}</span>`;
+    h += `</div>`;
+  }
+  document.getElementById('corp-pseudocod').innerHTML = h;
+}
+
+// ============================================================
+// CANVAS
+// ============================================================
+const canvas = document.getElementById('canvas-graf');
+const ctx    = canvas.getContext('2d');
+
+function sincronizeazaDimensiune() {
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth;
+  canvas.height = wrap.clientHeight;
+  redeseneaza();
+}
+new ResizeObserver(sincronizeazaDimensiune).observe(canvas.parentElement);
+
+// ============================================================
+// DESENARE
+// ============================================================
+function redeseneaza() {
+  const L = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, L, H);
+  deseneazaGrila(L, H);
+  G.muchii.forEach((m, i) => deseneazaMuchie(m, i));
+  G.noduri.forEach((_, i) => deseneazaNod(i));
+}
+
+function deseneazaGrila(L, H) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(30,38,51,0.7)';
+  ctx.lineWidth = 0.5;
+  const pas = 40;
+  for (let x = 0; x < L; x += pas) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for (let y = 0; y < H; y += pas) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(L,y); ctx.stroke(); }
+  ctx.restore();
+}
+
+function deseneazaMuchie(m, idx) {
+  const a = G.noduri[m.u], b = G.noduri[m.v];
+  const hover     = G.muchie_hover === idx;
+  const inMatching = alg.matching.has(idx);
+  const eliminata  = alg.eliminate.has(idx);
+  const esteActuala = alg.muchia_pas === idx;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+
+  if (esteActuala) {
+    // Muchia aleasă în iterația curentă — chihlimbar luminos
+    ctx.shadowBlur  = 18;
+    ctx.shadowColor = 'rgba(240,160,48,0.8)';
+    ctx.strokeStyle = '#ffb840';
+    ctx.lineWidth   = 4;
+  } else if (inMatching) {
+    // Muchii din E* (alese în pași anteriori)
+    ctx.strokeStyle = 'rgba(240,160,48,0.65)';
+    ctx.lineWidth   = 2.5;
+  } else if (eliminata) {
+    // Muchii eliminate — gri punctat
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = 'rgba(90,110,135,0.35)';
+    ctx.lineWidth   = 1;
+  } else if (hover) {
+    ctx.shadowBlur  = 14;
+    ctx.shadowColor = 'rgba(240,96,74,0.7)';
+    ctx.strokeStyle = '#f0604a';
+    ctx.lineWidth   = 3;
+  } else {
+    // Muchii normale (în E')
+    ctx.strokeStyle = alg.initializat && !alg.terminat
+      ? 'rgba(77,138,240,0.7)' : 'rgba(60,80,110,0.7)';
+    ctx.lineWidth   = 1.5;
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Indicator ✕ pe hover
+  if (hover) {
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#f0604a';
+    ctx.beginPath(); ctx.arc(mx, my, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('✕', mx, my + 0.5);
+  }
+  ctx.restore();
+}
+
+function deseneazaNod(i) {
+  const n = G.noduri[i];
+  const selectat  = G.sel.includes(i);
+  const inS       = alg.S.has(i);
+  const proaspat  = alg.proaspeti.has(i);
+  const inOptim   = alg.optim && alg.optim.includes(i);
+
+  ctx.save();
+
+  // Inel exterior violet pentru nodul optim
+  if (inOptim) {
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, RAZA_NOD + 6, 0, Math.PI * 2);
+    ctx.strokeStyle = '#c084fc';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.shadowBlur  = 10;
+    ctx.shadowColor = 'rgba(192,132,252,0.4)';
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+  }
+
+  // Strălucire
+  if (proaspat) {
+    ctx.shadowBlur  = 28;
+    ctx.shadowColor = 'rgba(62,207,114,0.7)';
+  } else if (selectat) {
+    ctx.shadowBlur  = 20;
+    ctx.shadowColor = 'rgba(240,160,48,0.5)';
+  } else if (inS) {
+    ctx.shadowBlur  = 14;
+    ctx.shadowColor = 'rgba(62,207,114,0.35)';
+  }
+
+  // Umplere
+  ctx.beginPath();
+  ctx.arc(n.x, n.y, RAZA_NOD, 0, Math.PI * 2);
+  ctx.fillStyle = selectat ? '#2a1f08'
+                : proaspat ? '#0d2810'
+                : inS      ? '#0a2016'
+                : '#111d2e';
+  ctx.fill();
+
+  // Contur
+  ctx.strokeStyle = selectat ? '#f0a030'
+                  : proaspat ? '#7fffa0'
+                  : inS      ? '#3ecf72'
+                  : '#4d8af0';
+  ctx.lineWidth = (selectat || inS) ? 2.5 : 1.5;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // ID nod
+  ctx.fillStyle = selectat ? '#f0c060'
+                : inS      ? '#5defa0'
+                : '#79b8ff';
+  ctx.font = `bold 13px 'JetBrains Mono', monospace`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(n.id, n.x, n.y);
+
+  ctx.restore();
+}
+
+// ============================================================
+// HIT-TEST
+// ============================================================
+function nodLa(x, y) {
+  for (let i = G.noduri.length - 1; i >= 0; i--) {
+    const n = G.noduri[i];
+    if (Math.hypot(x - n.x, y - n.y) <= RAZA_NOD + 3) return i;
+  }
+  return -1;
+}
+
+function muchieLa(px, py, prag = 9) {
+  for (let i = 0; i < G.muchii.length; i++) {
+    const a = G.noduri[G.muchii[i].u], b = G.noduri[G.muchii[i].v];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const lungSq = dx*dx + dy*dy;
+    if (lungSq < 1) continue;
+    let t = ((px - a.x)*dx + (py - a.y)*dy) / lungSq;
+    t = Math.max(0, Math.min(1, t));
+    if (Math.hypot(a.x + t*dx - px, a.y + t*dy - py) <= prag) return i;
+  }
+  return -1;
+}
+
+// ============================================================
+// OPERAȚII PE GRAF
+// ============================================================
+function adaugaNod(x, y) {
+  G.noduri.push({ id: G.urmatorul_id++, x, y });
+  resetAlgStare();
+  actualizeaza();
+}
+
+function adaugaMuchie(u, v) {
+  if (u === v) return;
+  if (G.muchii.some(m => (m.u===u&&m.v===v)||(m.u===v&&m.v===u))) return;
+  G.muchii.push({ u, v });
+  resetAlgStare();
+  actualizeaza();
+}
+
+function resetAlgStare() {
+  // Resetăm algoritmul când graful se schimbă
+  alg.initializat = false; alg.terminat = false;
+  alg.E_prim = []; alg.S.clear(); alg.matching.clear();
+  alg.eliminate.clear(); alg.proaspeti.clear();
+  alg.muchia_pas = -1; alg.linii_active.clear();
+  alg.pas = 0; alg.jurnal = []; alg.optim = null;
+  actualizeazaButoane();
+}
+
+// ============================================================
+// ALGORITM ApproxVertexCover
+// ============================================================
+
+function initAlg() {
+  if (G.noduri.length === 0 || G.muchii.length === 0) return;
+  alg.initializat = true; alg.terminat = false;
+  alg.E_prim = G.muchii.map((_, i) => i);
+  alg.S.clear(); alg.matching.clear();
+  alg.eliminate.clear(); alg.proaspeti.clear();
+  alg.muchia_pas = -1; alg.pas = 0; alg.jurnal = []; alg.optim = null;
+  // Linii 1, 2, 3 — inițializare
+  alg.linii_active = new Set([1, 2, 3]);
+  randeazaPseudocod();
+  randeazaStare();
+  actualizeazaButoane();
+  redeseneaza();
+}
+
+function pasAlg() {
+  if (!alg.initializat || alg.terminat) return;
+
+  alg.proaspeti.clear();
+
+  // Verificăm condiția: E' ≠ ∅
+  if (alg.E_prim.length === 0) {
+    // E' este vid → return S
+    alg.terminat = true;
+    alg.muchia_pas = -1;
+    alg.linii_active = new Set([4, 9]);
+
+    // Calculăm optimul
+    alg.optim = rezolvaOptim();
+
+    randeazaPseudocod();
+    randeazaStare();
+    actualizeazaButoane();
+    redeseneaza();
+    return;
+  }
+
+  // Alegem prima muchie disponibilă din E'
+  const idxMuchie = alg.E_prim[0];
+  const m = G.muchii[idxMuchie];
+  const u = m.u, v = m.v;
+  const nu = G.noduri[u], nv = G.noduri[v];
+
+  alg.pas++;
+  alg.muchia_pas = idxMuchie;
+
+  // Adăugăm ambele capete în S
+  alg.S.add(u); alg.S.add(v);
+  alg.proaspeti.add(u); alg.proaspeti.add(v);
+  alg.matching.add(idxMuchie);
+
+  // Eliminăm din E' toate muchiile incidente lui u și lui v
+  const nouE_prim = [];
+  let nrEliminate = 0;
+  for (const ei of alg.E_prim) {
+    if (ei === idxMuchie) continue; // muchia aleasă e deja extrasă
+    const mi = G.muchii[ei];
+    if (mi.u === u || mi.v === u || mi.u === v || mi.v === v) {
+      alg.eliminate.add(ei);
+      nrEliminate++;
+    } else {
+      nouE_prim.push(ei);
+    }
+  }
+  alg.E_prim = nouE_prim;
+
+  // Evidențiem liniile 4, 5, 6, 7, 8
+  alg.linii_active = new Set([4, 5, 6, 7, 8]);
+
+  alg.jurnal.push(
+    `Pas ${alg.pas}: ales (${nu.id},${nv.id}) → adăugat {${nu.id},${nv.id}} în S → eliminate ${nrEliminate + 1} muchii`
+  );
+
+  randeazaPseudocod();
+  randeazaStare();
+  actualizeazaButoane();
+  redeseneaza();
+}
+
+function ruleazaTot() {
+  while (!alg.terminat) pasAlg();
+}
+
+// ============================================================
+// AFIȘARE STARE EXECUȚIE
+// ============================================================
+function randeazaStare() {
+  const el = document.getElementById('text-stare');
+
+  if (!alg.initializat) {
+    el.innerHTML = `<span class="cm">// Construiește un graf, apoi\n// apasă "Inițializează" pentru\n// a porni algoritmul pas cu pas.</span>`;
+    return;
+  }
+
+  const sIds = [...alg.S].map(i => G.noduri[i].id).sort((a,b)=>a-b);
+  const nRamase = alg.E_prim.length;
+
+  let h = '';
+
+  // Stare curentă
+  h += `<span class="kw">PAS</span>  <span class="sol-obj">${alg.pas}</span>\n\n`;
+  h += `<span class="vr">E'</span>  <span class="op">=</span>  `;
+  if (alg.initializat && !alg.terminat && alg.pas === 0) {
+    h += `<span class="wt">${G.muchii.length}</span> <span class="cm">muchii (inițial)</span>\n`;
+  } else {
+    h += `<span class="wt">${nRamase}</span> <span class="cm">muchii rămase</span>\n`;
+  }
+
+  h += `<span class="vr">S</span>   <span class="op">=</span>  `;
+  h += sIds.length === 0
+    ? `<span class="op">∅</span>\n`
+    : `<span class="sol-in">{${sIds.join(', ')}}</span>\n`;
+
+  // Muchia curentă
+  if (alg.muchia_pas !== -1 && !alg.terminat) {
+    const m = G.muchii[alg.muchia_pas];
+    const nu = G.noduri[m.u], nv = G.noduri[m.v];
+    h += `\n<span class="kw">ALES</span>  <span class="hl-edge">(${nu.id}, ${nv.id})</span>\n`;
+    h += `<span class="cm">S ← S ∪ {${nu.id}, ${nv.id}}</span>\n`;
+  }
+
+  // Jurnal
+  if (alg.jurnal.length > 0) {
+    h += `\n<span class="kw">JURNAL</span>\n`;
+    for (const e of alg.jurnal) {
+      h += `  <span class="cm">${e}</span>\n`;
+    }
+  }
+
+  // Rezultat final
+  if (alg.terminat) {
+    const opt = alg.optim ? alg.optim.length : '?';
+    const rapStr = alg.optim && alg.optim.length > 0
+      ? (alg.S.size / alg.optim.length).toFixed(2)
+      : '—';
+    const optIds = alg.optim
+      ? alg.optim.map(i => G.noduri[i].id).sort((a,b)=>a-b)
+      : [];
+
+    h += `\n<span class="kw">━━ REZULTAT ━━━━━━━━━━━━━━━</span>\n`;
+    h += `  <span class="sol-in">|S| = ${alg.S.size}</span>  <span class="cm">acoperire validă</span>\n`;
+    if (alg.optim !== null) {
+      h += `  <span class="sol-opt">OPT = ${opt}</span>  <span class="cm">soluție optimă</span>\n`;
+      h += `  <span class="cm">raport = ${rapStr}  (≤ 2.0) ✓</span>\n`;
+      h += `  <span class="sol-opt">SET OPT: {${optIds.join(', ')}}</span>\n`;
+    }
+
+    h += `\n<span class="kw">━━ DEMONSTRAȚIE ━━━━━━━━━━</span>\n`;
+    const nrMatching = alg.matching.size;
+    h += `  <span class="cm">|E*| = ${nrMatching} muchii nod-disjuncte</span>\n`;
+    h += `  <span class="cm">Lema 1: OPT ≥ |E*| = ${nrMatching}</span>\n`;
+    h += `  <span class="cm">|S| = 2·|E*| = ${2*nrMatching}</span>\n`;
+    h += `  <span class="sol-in">∴ |S| = ${alg.S.size} ≤ 2·OPT  ✓</span>`;
+  }
+
+  el.innerHTML = h;
+}
+
+// ============================================================
+// REZOLVATOR OPTIM (forță brută, n ≤ 20)
+// ============================================================
+function rezolvaOptim() {
+  const n = G.noduri.length;
+  if (n === 0 || G.muchii.length === 0) return [];
+  if (n > 20) return null;
+
+  const listaMuchii = G.muchii.map(m => [m.u, m.v]);
+  let costMin = Infinity, best = [];
+
+  for (let mask = 0; mask < (1 << n); mask++) {
+    const cardinal = countBits(mask);
+    if (cardinal >= costMin) continue;
+    let valid = true;
+    for (const [u, v] of listaMuchii) {
+      if (!(mask & (1 << u)) && !(mask & (1 << v))) { valid = false; break; }
+    }
+    if (valid) {
+      costMin = cardinal;
+      best = [];
+      for (let i = 0; i < n; i++) if (mask & (1 << i)) best.push(i);
+    }
+  }
+  return best;
+}
+
+function countBits(x) {
+  let c = 0;
+  while (x) { c += x & 1; x >>= 1; }
+  return c;
+}
+
+// ============================================================
+// ACTUALIZARE BUTOANE
+// ============================================================
+function actualizeazaButoane() {
+  const areGraf = G.noduri.length > 0 && G.muchii.length > 0;
+  document.getElementById('btn-init').disabled  = !areGraf || alg.initializat;
+  document.getElementById('btn-pas').disabled   = !alg.initializat || alg.terminat;
+  document.getElementById('btn-run').disabled   = !alg.initializat || alg.terminat;
+  document.getElementById('btn-reset').disabled = !alg.initializat;
+}
+
+// ============================================================
+// DRAG NOD
+// ============================================================
+const drag = {
+  activ: false, indicNod: -1,
+  startX: 0, startY: 0, originX: 0, originY: 0,
+  miscat: false, shiftJos: false, ctrlJos: false,
+  clientXJos: 0, clientYJos: 0,
+};
+const PRAG_DRAG = 5;
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const lovit = nodLa(x, y);
+  drag.shiftJos = e.shiftKey; drag.ctrlJos = e.ctrlKey || e.metaKey;
+  drag.clientXJos = e.clientX; drag.clientYJos = e.clientY; drag.miscat = false;
+  if (lovit !== -1 && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+    drag.activ = true; drag.indicNod = lovit;
+    drag.startX = x; drag.startY = y;
+    drag.originX = G.noduri[lovit].x; drag.originY = G.noduri[lovit].y;
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+
+  if (drag.activ) {
+    const dx = x - drag.startX, dy = y - drag.startY;
+    if (!drag.miscat && Math.hypot(dx, dy) > PRAG_DRAG) drag.miscat = true;
+    if (drag.miscat) {
+      const n = G.noduri[drag.indicNod];
+      n.x = Math.max(RAZA_NOD, Math.min(canvas.width  - RAZA_NOD, drag.originX + dx));
+      n.y = Math.max(RAZA_NOD, Math.min(canvas.height - RAZA_NOD, drag.originY + dy));
+      redeseneaza();
+    }
+    return;
+  }
+
+  if (e.shiftKey) {
+    const lovit = nodLa(x, y);
+    if (lovit !== -1) {
+      canvas.style.cursor = 'pointer';
+      if (G.muchie_hover !== -1) { G.muchie_hover = -1; redeseneaza(); }
+    } else {
+      const mi = muchieLa(x, y);
+      canvas.style.cursor = mi !== -1 ? 'pointer' : 'crosshair';
+      if (G.muchie_hover !== mi) { G.muchie_hover = mi; redeseneaza(); }
+    }
+  } else {
+    const lovit = nodLa(x, y);
+    canvas.style.cursor = lovit !== -1 ? 'grab' : 'crosshair';
+    if (G.muchie_hover !== -1) { G.muchie_hover = -1; redeseneaza(); }
+  }
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (e.button !== 0) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const eraTragere = drag.activ && drag.miscat;
+  drag.activ = false;
+  if (eraTragere) { canvas.style.cursor = 'grab'; return; }
+
+  const lovit = nodLa(x, y);
+
+  if (drag.shiftJos) {
+    if (lovit !== -1) {
+      const idx = G.sel.indexOf(lovit);
+      if (idx === -1) { if (G.sel.length < 2) G.sel.push(lovit); }
+      else G.sel.splice(idx, 1);
+      if (G.sel.length === 2) { adaugaMuchie(G.sel[0], G.sel[1]); G.sel = []; }
+    } else {
+      const mi = muchieLa(x, y);
+      if (mi !== -1) {
+        G.muchii.splice(mi, 1);
+        G.muchie_hover = -1;
+        resetAlgStare();
+        actualizeaza();
+        return;
+      }
+    }
+  } else {
+    G.sel = [];
+    if (lovit === -1) adaugaNod(x, y);
+  }
+  actualizeazaIndicator();
+  redeseneaza();
+});
+
+canvas.addEventListener('mouseleave', () => {
+  if (G.muchie_hover !== -1) { G.muchie_hover = -1; redeseneaza(); }
+});
+window.addEventListener('mouseup', e => {
+  if (e.button !== 0 || !drag.activ) return;
+  drag.activ = false;
+  canvas.style.cursor = 'crosshair';
+});
+
+// ============================================================
+// TASTATURĂ
+// ============================================================
+document.addEventListener('keydown', e => {
+  if (e.key === 'Shift') {
+    const b = document.getElementById('insigna-shift');
+    b.textContent = '⇧ SHIFT: ACTIV';
+    b.classList.add('activ');
+  }
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'Shift') {
+    const b = document.getElementById('insigna-shift');
+    b.textContent = '⇧ SHIFT: INACTIV';
+    b.classList.remove('activ');
+  }
+});
+
+function actualizeazaIndicator() {
+  const el = document.getElementById('indicator-selectie');
+  if (G.sel.length === 1) {
+    el.textContent = `⇧ Nodul ${G.noduri[G.sel[0]].id} selectat — apasă pe alt nod`;
+    el.classList.add('vizibil');
+  } else {
+    el.classList.remove('vizibil');
+  }
+}
+
+// ============================================================
+// BUTOANE
+// ============================================================
+document.getElementById('btn-init').addEventListener('click', initAlg);
+
+document.getElementById('btn-pas').addEventListener('click', () => {
+  // Primul pas după init: verificăm condiția
+  if (alg.pas === 0 && alg.linii_active.has(1)) {
+    // Trecem de la inițializare la buclă
+    alg.linii_active = new Set([4]);
+    randeazaPseudocod();
+    randeazaStare();
+    return;
+  }
+  pasAlg();
+});
+
+document.getElementById('btn-run').addEventListener('click', ruleazaTot);
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  resetAlgStare();
+  randeazaPseudocod();
+  randeazaStare();
+  redeseneaza();
+});
+
+document.getElementById('btn-sterge').addEventListener('click', () => {
+  G.noduri = []; G.muchii = []; G.sel = [];
+  G.urmatorul_id = 1; G.muchie_hover = -1;
+  resetAlgStare();
+  actualizeazaIndicator();
+  actualizeaza();
+});
+
+// ============================================================
+// ACTUALIZARE GENERALĂ
+// ============================================================
+function actualizeaza() {
+  actualizeazaStatistici();
+  randeazaPseudocod();
+  randeazaStare();
+  actualizeazaButoane();
+  redeseneaza();
+}
+
+function actualizeazaStatistici() {
+  const nn = G.noduri.length, nm = G.muchii.length;
+  document.getElementById('statistici-graf').textContent =
+    `${nn} ${nn === 1 ? 'nod' : 'noduri'} · ${nm} ${nm === 1 ? 'muchie' : 'muchii'}`;
+}
+
+// ============================================================
+// INIȚIALIZARE
+// ============================================================
+randeazaPseudocod();
+randeazaStare();
+actualizeazaButoane();
+setTimeout(sincronizeazaDimensiune, 60);
+</script>
+</body>
+</html>
